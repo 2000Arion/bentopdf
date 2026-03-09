@@ -42,7 +42,7 @@ ENV VITE_DEFAULT_LANGUAGE=$VITE_DEFAULT_LANGUAGE
 
 # Custom branding (e.g. VITE_BRAND_NAME=MyCompany VITE_BRAND_LOGO=my-logo.svg)
 ARG VITE_BRAND_NAME=arion2000.xyz PDF-Werkzeuge
-ARG VITE_BRAND_LOGO=images/logo_white_only-icon.png
+ARG VITE_BRAND_LOGO=images/favicon-no-bg.svg
 ARG VITE_FOOTER_TEXT=© 2026 arion2000.xyz Services. Alle Rechte vorbehalten.
 ENV VITE_BRAND_NAME=$VITE_BRAND_NAME
 ENV VITE_BRAND_LOGO=$VITE_BRAND_LOGO

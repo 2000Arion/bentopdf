@@ -7,7 +7,7 @@ services:
         - SIMPLE_MODE=true
         - VITE_DEFAULT_LANGUAGE=de
         - VITE_BRAND_NAME=arion2000.xyz PDF-Werkzeuge
-        - VITE_BRAND_LOGO=images/logo_white_only-icon.png
+        - VITE_BRAND_LOGO=images/favicon-no-bg.svg
         - VITE_FOOTER_TEXT=© 2026 arion2000.xyz Services. Alle Rechte vorbehalten.
         - SITE_URL=https://pdf.arion2000.xyz
     # GitHub Container Registry (Recommended)
