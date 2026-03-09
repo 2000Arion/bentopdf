@@ -1,0 +1,25 @@
+services:
+  bentopdf:
+    # Using GitHub Container Registry (Recommended)
+    image: ghcr.io/alam00000/bentopdf:custom
+    # Or using Docker Hub
+    # image: bentopdfteam/bentopdf-simple:latest
+    container_name: bentopdf
+    restart: unless-stopped
+    networks:
+      proxy-network:
+        aliases:
+          - bentopdf
+    # Internal Port: 8080
+    env_file:
+      - .env
+    environment:
+      SIMPLE_MODE: true
+      VITE_DEFAULT_LANGUAGE: "de"
+      VITE_BRAND_NAME: "arion2000.xyz PDF"
+      VITE_BRAND_LOGO: "images/logo_white_only-icon.png"
+      VITE_FOOTER_TEXT: "© 2026 arion2000.xyz Services. Alle Rechte vorbehalten."
+
+networks:
+  proxy-network:
+    external: true
