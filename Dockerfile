@@ -1,6 +1,7 @@
 # Global variable declaration:
 # Build to serve under Subdirectory BASE_URL if provided, eg: "ARG BASE_URL=/pdf/", otherwise leave blank: "ARG BASE_URL="
 ARG BASE_URL=
+ARG SITE_URL=https://pdf.arion2000.xyz/
 
 # Build stage
 FROM public.ecr.aws/docker/library/node:20-alpine AS builder
@@ -17,7 +18,7 @@ COPY . .
 
 # Build without type checking (vite build only)
 # Pass SIMPLE_MODE environment variable if provided
-ARG SIMPLE_MODE=false
+ARG SIMPLE_MODE=true
 ENV SIMPLE_MODE=$SIMPLE_MODE
 ARG COMPRESSION_MODE=all
 ENV COMPRESSION_MODE=$COMPRESSION_MODE
@@ -36,13 +37,13 @@ ENV VITE_WASM_GS_URL=$VITE_WASM_GS_URL
 ENV VITE_WASM_CPDF_URL=$VITE_WASM_CPDF_URL
 
 # Default UI language (e.g. en, fr, de, es, zh, ar)
-ARG VITE_DEFAULT_LANGUAGE
+ARG VITE_DEFAULT_LANGUAGE=de
 ENV VITE_DEFAULT_LANGUAGE=$VITE_DEFAULT_LANGUAGE
 
 # Custom branding (e.g. VITE_BRAND_NAME=MyCompany VITE_BRAND_LOGO=my-logo.svg)
-ARG VITE_BRAND_NAME
-ARG VITE_BRAND_LOGO
-ARG VITE_FOOTER_TEXT
+ARG VITE_BRAND_NAME=arion2000.xyz PDF-Werkzeuge
+ARG VITE_BRAND_LOGO=images/logo_white_only-icon.png
+ARG VITE_FOOTER_TEXT=© 2026 arion2000.xyz Services. Alle Rechte vorbehalten.
 ENV VITE_BRAND_NAME=$VITE_BRAND_NAME
 ENV VITE_BRAND_LOGO=$VITE_BRAND_LOGO
 ENV VITE_FOOTER_TEXT=$VITE_FOOTER_TEXT

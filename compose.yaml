@@ -1,0 +1,31 @@
+services:
+  bentopdf:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SIMPLE_MODE=true
+        - VITE_DEFAULT_LANGUAGE=de
+        - VITE_BRAND_NAME=arion2000.xyz PDF-Werkzeuge
+        - VITE_BRAND_LOGO=images/logo_white_only-icon.png
+        - VITE_FOOTER_TEXT=© 2026 arion2000.xyz Services. Alle Rechte vorbehalten.
+        - SITE_URL=https://pdf.arion2000.xyz
+    # GitHub Container Registry (Recommended)
+    # simple mode - ghcr.io/alam00000/bentopdf-simple:latest
+    # default mode - ghcr.io/alam00000/bentopdf:latest
+    # Docker Hub (Alternative)
+    # simple mode - bentopdfteam/bentopdf-simple:latest
+    # default mode - bentopdfteam/bentopdf:latest
+    container_name: bentopdf
+    restart: unless-stopped
+    networks:
+      proxy-network:
+        aliases:
+          - bentopdf
+    # For IPv4-only environments
+    #environment:
+    #  - DISABLE_IPV6=true
+
+networks:
+  proxy-network:
+    external: true
