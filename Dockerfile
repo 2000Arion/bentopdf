@@ -53,9 +53,9 @@ ARG VITE_DEFAULT_LANGUAGE=de
 ENV VITE_DEFAULT_LANGUAGE=$VITE_DEFAULT_LANGUAGE
 
 # Custom branding (e.g. VITE_BRAND_NAME=MyCompany VITE_BRAND_LOGO=my-logo.svg)
-ARG VITE_BRAND_NAME=arion2000.xyz PDF-Werkzeuge
+ARG VITE_BRAND_NAME="arion2000.xyz PDF-Werkzeuge"
 ARG VITE_BRAND_LOGO=images/favicon-no-bg.svg
-ARG VITE_FOOTER_TEXT=© 2026 arion2000.xyz Services. Alle Rechte vorbehalten.
+ARG VITE_FOOTER_TEXT="© 2026 arion2000.xyz Services. Alle Rechte vorbehalten."
 ENV VITE_BRAND_NAME=$VITE_BRAND_NAME
 ENV VITE_BRAND_LOGO=$VITE_BRAND_LOGO
 ENV VITE_FOOTER_TEXT=$VITE_FOOTER_TEXT
@@ -71,8 +71,8 @@ RUN --mount=type=secret,id=VITE_CORS_PROXY_URL \
 # Production stage
 FROM quay.io/nginx/nginx-unprivileged:stable-alpine-slim
 
-LABEL org.opencontainers.image.source="https://github.com/alam00000/bentopdf"
-LABEL org.opencontainers.image.url="https://github.com/alam00000/bentopdf"
+LABEL org.opencontainers.image.source="https://hub.docker.com/r/arion2000/pdf-tools"
+LABEL org.opencontainers.image.url="https://hub.docker.com/r/arion2000/pdf-tools"
 
 # global arg to local arg
 ARG BASE_URL
