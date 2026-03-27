@@ -279,7 +279,45 @@
   },
   "pdfToTiff": {
     "name": "PDF in TIFF",
-    "subtitle": "Converti ogni pagina del PDF in un'immagine TIFF."
+    "subtitle": "Converti ogni pagina del PDF in un'immagine TIFF.",
+    "dpi": "DPI (Risoluzione)",
+    "dpiExplanation": "DPI più alto = qualità migliore per la stampa, dimensione file maggiore",
+    "compression": "Compressione",
+    "compressionExplanation": "LZW e Deflate sono senza perdita. CCITT Group 4 è ideale per documenti scansionati in bianco e nero.",
+    "colorMode": "Modalità colore",
+    "multiPage": "Salva come TIFF multipagina (file singolo)",
+    "loadingVips": "Caricamento processore immagini...",
+    "converting": "Conversione in TIFF..."
+  },
+  "pdfToCbz": {
+    "name": "PDF in CBZ",
+    "subtitle": "Converti un PDF in un file CBZ (Archivio Fumetti) per lettori di fumetti.",
+    "imageFormat": "Formato Immagine",
+    "quality": "Qualità Immagine",
+    "qualityExplanation": "Qualità più alta = dimensione file più grande",
+    "scale": "Scala",
+    "scaleExplanation": "Scala più alta = migliore qualità per schermi ad alta risoluzione",
+    "grayscale": "Converti in scala di grigi",
+    "manga": "Modalità manga (da destra a sinistra)",
+    "includeMetadata": "Includi metadati ComicInfo.xml",
+    "titleLabel": "Titolo",
+    "seriesLabel": "Serie",
+    "authorLabel": "Autore/i",
+    "numberLabel": "#",
+    "volumeLabel": "Vol.",
+    "publisherLabel": "Editore",
+    "tagsLabel": "Tag / Genere",
+    "yearLabel": "Anno di pubblicazione",
+    "ratingLabel": "Valutazione (0-5)",
+    "converting": "Conversione in CBZ...",
+    "alert": {
+      "invalidFile": "File Non Valido",
+      "invalidFileExplanation": "Carica un file PDF.",
+      "noFile": "Nessun File",
+      "noFileExplanation": "Carica prima un file PDF.",
+      "conversionSuccess": "PDF convertito in CBZ con successo!",
+      "conversionError": "Impossibile convertire il PDF in CBZ. Il file potrebbe essere danneggiato."
+    }
   },
   "pdfToGreyscale": {
     "name": "PDF in Scala di Grigi",
@@ -651,6 +689,15 @@
     "name": "Verifica firma PDF",
     "pageTitle": "Verifica firma PDF - Controlla firme digitali | BentoPDF",
     "subtitle": "Verifica le firme digitali nei tuoi PDF. Controlla la validità del certificato, visualizza i dati del firmatario e conferma l'integrità del documento. Tutto avviene nel tuo browser."
+  },
+  "timestampPdf": {
+    "name": "Marca temporale PDF",
+    "pageTitle": "Marca temporale PDF gratuita online - RFC 3161 | BentoPDF",
+    "subtitle": "Aggiungi una marca temporale RFC 3161 al tuo PDF tramite un server TSA affidabile. Dimostra che il tuo documento esisteva in un momento specifico. Nessun certificato richiesto.",
+    "tsaSectionTitle": "Server marca temporale (TSA)",
+    "selectTsa": "Seleziona un server TSA",
+    "applyTimestamp": "Applica marca temporale",
+    "successMessage": "PDF marcato temporalmente con successo! La marca può essere verificata in Adobe Acrobat e altri lettori PDF."
   },
   "emailToPdf": {
     "name": "Email in PDF",

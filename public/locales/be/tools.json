@@ -279,7 +279,45 @@
   },
   "pdfToTiff": {
     "name": "PDF у TIFF",
-    "subtitle": "Канвертаваць кожную старонку PDF у відарыс TIFF."
+    "subtitle": "Канвертаваць кожную старонку PDF у відарыс TIFF.",
+    "dpi": "DPI (Разрашэнне)",
+    "dpiExplanation": "Вышэйшы DPI = лепшая якасць для друку, большы памер файла",
+    "compression": "Сціск",
+    "compressionExplanation": "LZW і Deflate — без страт. CCITT Group 4 лепш за ўсё падыходзіць для чорна-белых сканаваных дакументаў.",
+    "colorMode": "Каляровы рэжым",
+    "multiPage": "Захаваць як шматстаронкавы TIFF (адзін файл)",
+    "loadingVips": "Загрузка апрацоўшчыка відарысаў...",
+    "converting": "Канвертаванне ў TIFF..."
+  },
+  "pdfToCbz": {
+    "name": "PDF у CBZ",
+    "subtitle": "Канвертаваць PDF у файл CBZ (архіў коміксаў) для чытачоў коміксаў.",
+    "imageFormat": "Фармат выявы",
+    "quality": "Якасць выявы",
+    "qualityExplanation": "Вышэйшая якасць = большы памер файла",
+    "scale": "Маштаб",
+    "scaleExplanation": "Вышэйшы маштаб = лепшая якасць для экранаў высокай раздзяляльнасці",
+    "grayscale": "Канвертаваць у градацыі шэрага",
+    "manga": "Рэжым манга (справа налева)",
+    "includeMetadata": "Уключыць метаданыя ComicInfo.xml",
+    "titleLabel": "Назва",
+    "seriesLabel": "Серыя",
+    "authorLabel": "Аўтар(ы)",
+    "numberLabel": "#",
+    "volumeLabel": "Том",
+    "publisherLabel": "Выдавец",
+    "tagsLabel": "Тэгі / Жанр",
+    "yearLabel": "Год выдання",
+    "ratingLabel": "Рэйтынг (0-5)",
+    "converting": "Канвертаванне ў CBZ...",
+    "alert": {
+      "invalidFile": "Няправільны файл",
+      "invalidFileExplanation": "Калі ласка, загрузіце файл PDF.",
+      "noFile": "Няма файла",
+      "noFileExplanation": "Калі ласка, спачатку загрузіце файл PDF.",
+      "conversionSuccess": "PDF паспяхова канвертаваны ў CBZ!",
+      "conversionError": "Не ўдалося канвертаваць PDF у CBZ. Файл можа быць пашкоджаны."
+    }
   },
   "pdfToGreyscale": {
     "name": "PDF у градацыі шэрага",
@@ -651,6 +689,15 @@
     "name": "Праверыць подпіс PDF",
     "pageTitle": "Праверыць подпіс PDF - Верыфікацыя лічбавых подпісаў | BentoPDF",
     "subtitle": "Праверыць лічбавыя подпісы ў PDF. Праверыць сапраўднасць сертыфіката, паглядзець дэталі падпісанта і пацвердзіць надзейнасць дакумента. Уся апрацоўка адбываецца ў вашым браўзеры."
+  },
+  "timestampPdf": {
+    "name": "Пазначыць PDF часам",
+    "pageTitle": "Часовая пазнака PDF бясплатна - RFC 3161 | BentoPDF",
+    "subtitle": "Дадайце часовую пазнаку RFC 3161 да PDF праз давераны сервер TSA. Даказвае, што ваш дакумент існаваў у пэўны момант часу. Сертыфікат не патрабуецца.",
+    "tsaSectionTitle": "Сервер часовых пазнак (TSA)",
+    "selectTsa": "Абраць сервер TSA",
+    "applyTimestamp": "Прымяніць часовую пазнаку",
+    "successMessage": "PDF паспяхова пазначаны часам! Пазнаку можна праверыць у Adobe Acrobat і іншых PDF-праглядчыках."
   },
   "emailToPdf": {
     "name": "Email у PDF",

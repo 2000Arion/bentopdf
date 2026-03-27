@@ -2,6 +2,8 @@
 import { createIcons, icons } from 'lucide';
 import { showAlert, showLoader, hideLoader } from '../ui.js';
 import { formatBytes, downloadFile } from '../utils/helpers.js';
+import { makeUniqueFileKey } from '../utils/deduplicate-filename.js';
+import { batchDecryptIfNeeded } from '../utils/password-prompt.js';
 
 const embedPdfWasmUrl = new URL(
   'embedpdf-snippet/dist/pdfium.wasm',
@@ -111,8 +113,17 @@ async function handleFiles(files: FileList) {
 
     if (!pdfWrapper || !pdfContainer || !fileDisplayArea) return;
 
+    hideLoader();
+    const decryptedFiles = await batchDecryptIfNeeded(pdfFiles);
+    showLoader('Loading PDF Editor...');
+
+    if (decryptedFiles.length === 0) {
+      hideLoader();
+      return;
+    }
+
     if (!isViewerInitialized) {
-      const firstFile = pdfFiles[0];
+      const firstFile = decryptedFiles[0];
       const firstBuffer = await firstFile.arrayBuffer();
 
       pdfContainer.textContent = '';
@@ -143,10 +154,10 @@ async function handleFiles(files: FileList) {
 
       docManagerPlugin.onDocumentOpened((data: any) => {
         const docId = data?.id;
-        const docName = data?.name;
+        const docKey = data?.name;
         if (!docId) return;
         const pendingEntry = fileDisplayArea.querySelector(
-          `[data-pending-name="${CSS.escape(docName)}"]`
+          `[data-pending-name="${CSS.escape(docKey)}"]`
         ) as HTMLElement;
         if (pendingEntry) {
           pendingEntry.removeAttribute('data-pending-name');
@@ -162,19 +173,19 @@ async function handleFiles(files: FileList) {
         }
       });
 
-      addFileEntries(fileDisplayArea, pdfFiles);
+      addFileEntries(fileDisplayArea, decryptedFiles);
 
       docManagerPlugin.openDocumentBuffer({
         buffer: firstBuffer,
-        name: firstFile.name,
+        name: makeUniqueFileKey(0, firstFile.name),
         autoActivate: true,
       });
 
-      for (let i = 1; i < pdfFiles.length; i++) {
-        const buffer = await pdfFiles[i].arrayBuffer();
+      for (let i = 1; i < decryptedFiles.length; i++) {
+        const buffer = await decryptedFiles[i].arrayBuffer();
         docManagerPlugin.openDocumentBuffer({
           buffer,
-          name: pdfFiles[i].name,
+          name: makeUniqueFileKey(i, decryptedFiles[i].name),
           autoActivate: false,
         });
       }
@@ -213,13 +224,13 @@ async function handleFiles(files: FileList) {
         });
       }
     } else {
-      addFileEntries(fileDisplayArea, pdfFiles);
+      addFileEntries(fileDisplayArea, decryptedFiles);
 
-      for (const file of pdfFiles) {
-        const buffer = await file.arrayBuffer();
+      for (let i = 0; i < decryptedFiles.length; i++) {
+        const buffer = await decryptedFiles[i].arrayBuffer();
         docManagerPlugin.openDocumentBuffer({
           buffer,
-          name: file.name,
+          name: makeUniqueFileKey(i, decryptedFiles[i].name),
           autoActivate: true,
         });
       }
@@ -233,11 +244,12 @@ async function handleFiles(files: FileList) {
 }
 
 function addFileEntries(fileDisplayArea: HTMLElement, files: File[]) {
-  for (const file of files) {
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
     const fileDiv = document.createElement('div');
     fileDiv.className =
       'flex items-center justify-between bg-gray-700 p-3 rounded-lg';
-    fileDiv.setAttribute('data-pending-name', file.name);
+    fileDiv.setAttribute('data-pending-name', makeUniqueFileKey(i, file.name));
 
     const infoContainer = document.createElement('div');
     infoContainer.className = 'flex flex-col flex-1 min-w-0';

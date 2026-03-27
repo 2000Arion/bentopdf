@@ -1,4 +1,5 @@
 import { showLoader, hideLoader, showAlert } from '../ui.js';
+import { t } from '../i18n/i18n';
 import {
   downloadFile,
   readFileAsArrayBuffer,
@@ -10,6 +11,8 @@ import { createIcons, icons } from 'lucide';
 import { isWasmAvailable, getWasmBaseUrl } from '../config/wasm-cdn-config.js';
 import { showWasmRequiredDialog } from '../utils/wasm-provider.js';
 import { loadPyMuPDF, isPyMuPDFAvailable } from '../utils/pymupdf-loader.js';
+import { batchDecryptIfNeeded } from '../utils/password-prompt.js';
+import { deduplicateFileName } from '../utils/deduplicate-filename.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -50,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const metaSpan = document.createElement('div');
         metaSpan.className = 'text-xs text-gray-400';
-        metaSpan.textContent = `${formatBytes(file.size)} • Loading pages...`;
+        metaSpan.textContent = `${formatBytes(file.size)} • ${t('common.loadingPageCount')}`;
 
         infoContainer.append(nameSpan, metaSpan);
 
@@ -103,6 +106,10 @@ document.addEventListener('DOMContentLoaded', () => {
       showLoader('Loading PDF converter...');
       const pymupdf = await loadPyMuPDF();
 
+      hideLoader();
+      state.files = await batchDecryptIfNeeded(state.files);
+      showLoader('Converting...');
+
       if (state.files.length === 1) {
         const file = state.files[0];
         showLoader(`Converting ${file.name}...`);
@@ -120,9 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
           () => resetState()
         );
       } else {
-        showLoader('Converting multiple PDFs...');
         const JSZip = (await import('jszip')).default;
         const zip = new JSZip();
+        const usedNames = new Set<string>();
 
         for (let i = 0; i < state.files.length; i++) {
           const file = state.files[i];
@@ -133,7 +140,11 @@ document.addEventListener('DOMContentLoaded', () => {
           const docxBlob = await pymupdf.pdfToDocx(file);
           const baseName = file.name.replace(/\.pdf$/i, '');
           const arrayBuffer = await docxBlob.arrayBuffer();
-          zip.file(`${baseName}.docx`, arrayBuffer);
+          const zipEntryName = deduplicateFileName(
+            `${baseName}.docx`,
+            usedNames
+          );
+          zip.file(zipEntryName, arrayBuffer);
         }
 
         showLoader('Creating ZIP archive...');

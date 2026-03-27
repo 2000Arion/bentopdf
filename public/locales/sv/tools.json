@@ -279,7 +279,45 @@
   },
   "pdfToTiff": {
     "name": "PDF till TIFF",
-    "subtitle": "Konvertera varje PDF-sida till en TIFF-bild."
+    "subtitle": "Konvertera varje PDF-sida till en TIFF-bild.",
+    "dpi": "DPI (Upplösning)",
+    "dpiExplanation": "Högre DPI = bättre kvalitet för utskrift, större filstorlek",
+    "compression": "Komprimering",
+    "compressionExplanation": "LZW och Deflate är förlustfria. CCITT Grupp 4 är bäst för svartvita skannade dokument.",
+    "colorMode": "Färgläge",
+    "multiPage": "Spara som flersidig TIFF (en fil)",
+    "loadingVips": "Laddar bildprocessor...",
+    "converting": "Konverterar till TIFF..."
+  },
+  "pdfToCbz": {
+    "name": "PDF till CBZ",
+    "subtitle": "Konvertera en PDF till en CBZ-fil (serietidningsarkiv) för serieläsare.",
+    "imageFormat": "Bildformat",
+    "quality": "Bildkvalitet",
+    "qualityExplanation": "Högre kvalitet = större filstorlek",
+    "scale": "Skala",
+    "scaleExplanation": "Högre skala = bättre kvalitet för högupplösta skärmar",
+    "grayscale": "Konvertera till gråskala",
+    "manga": "Manga-läge (höger till vänster)",
+    "includeMetadata": "Inkludera ComicInfo.xml-metadata",
+    "titleLabel": "Titel",
+    "seriesLabel": "Serie",
+    "authorLabel": "Författare",
+    "numberLabel": "#",
+    "volumeLabel": "Vol.",
+    "publisherLabel": "Förlag",
+    "tagsLabel": "Taggar / Genre",
+    "yearLabel": "Utgivningsår",
+    "ratingLabel": "Betyg (0-5)",
+    "converting": "Konverterar till CBZ...",
+    "alert": {
+      "invalidFile": "Ogiltig fil",
+      "invalidFileExplanation": "Vänligen ladda upp en PDF-fil.",
+      "noFile": "Ingen fil",
+      "noFileExplanation": "Vänligen ladda upp en PDF-fil först.",
+      "conversionSuccess": "PDF konverterad till CBZ framgångsrikt!",
+      "conversionError": "Kunde inte konvertera PDF till CBZ. Filen kan vara skadad."
+    }
   },
   "pdfToGreyscale": {
     "name": "PDF till gråskala",
@@ -651,6 +689,15 @@
     "name": "Validera PDF-signatur",
     "pageTitle": "Validera PDF-signatur - Verifiera digitala signaturer | BentoPDF",
     "subtitle": "Verifiera digitala signaturer i dina PDF-filer. Kontrollera certifikatgiltighet, visa signerardetaljer och bekräfta dokumentintegritet. All bearbetning sker i din webbläsare."
+  },
+  "timestampPdf": {
+    "name": "Tidsstämpla PDF",
+    "pageTitle": "Tidsstämpla PDF gratis online - RFC 3161 dokumenttidsstämpel | BentoPDF",
+    "subtitle": "Lägg till en RFC 3161 tidsstämpel till din PDF via en betrodd TSA-server. Bevisar att ditt dokument existerade vid en specifik tidpunkt. Inget certifikat krävs.",
+    "tsaSectionTitle": "Tidsstämpelserver (TSA)",
+    "selectTsa": "Välj en TSA-server",
+    "applyTimestamp": "Tillämpa tidsstämpel",
+    "successMessage": "PDF tidsstämplad! Tidsstämpeln kan verifieras i Adobe Acrobat och andra PDF-läsare."
   },
   "emailToPdf": {
     "name": "E-post till PDF",

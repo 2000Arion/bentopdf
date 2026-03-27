@@ -13,6 +13,8 @@ import {
   escapeHtml,
   hexToRgb,
 } from '../utils/helpers.js';
+import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
+import { loadPdfDocument } from '../utils/load-pdf-document.js';
 import {
   BookmarkNode,
   BookmarkTree,
@@ -1057,6 +1059,12 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
       e.preventDefault();
       redo();
     }
+  } else if (e.key === 'PageUp') {
+    e.preventDefault();
+    prevPageBtn?.click();
+  } else if (e.key === 'PageDown') {
+    e.preventDefault();
+    nextPageBtn?.click();
   }
 });
 
@@ -1217,7 +1225,14 @@ async function loadPDF(e?: Event): Promise<void> {
   if (filenameDisplay)
     filenameDisplay.textContent = truncateFilename(file.name);
   renderFileDisplay(file);
-  const arrayBuffer = await file.arrayBuffer();
+
+  loaderModal?.classList.add('hidden');
+  const result = await loadPdfWithPasswordPrompt(file);
+  if (!result) {
+    loaderModal?.classList.add('hidden');
+    return;
+  }
+  loaderModal?.classList.remove('hidden');
 
   currentPage = 1;
   bookmarkTree = [];
@@ -1226,12 +1241,8 @@ async function loadPDF(e?: Event): Promise<void> {
   selectedBookmarks.clear();
   collapsedNodes.clear();
 
-  pdfLibDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-
-  const loadingTask = getPDFDocument({
-    data: new Uint8Array(arrayBuffer),
-  });
-  pdfJsDoc = await loadingTask.promise;
+  pdfLibDoc = await loadPdfDocument(result.bytes, { ignoreEncryption: true });
+  pdfJsDoc = result.pdf;
 
   if (gotoPageInput) gotoPageInput.max = String(pdfJsDoc.numPages);
 

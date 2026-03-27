@@ -1,6 +1,7 @@
 import { tesseractLanguages } from '../config/tesseract-languages.js';
 import { showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
+import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
 import { icons, createIcons } from 'lucide';
 import { OcrState } from '@/types';
 import { performOcr } from '../utils/ocr.js';
@@ -121,6 +122,9 @@ async function runOCR() {
   );
   const binarize = (document.getElementById('ocr-binarize') as HTMLInputElement)
     .checked;
+  const embedFullFonts = (
+    document.getElementById('ocr-embed-full-fonts') as HTMLInputElement
+  ).checked;
   const whitelist = (
     document.getElementById('ocr-whitelist') as HTMLInputElement
   ).value;
@@ -154,6 +158,7 @@ async function runOCR() {
       resolution: scale,
       binarize,
       whitelist,
+      embedFullFonts,
       onProgress: updateProgress,
     });
 
@@ -227,14 +232,17 @@ async function updateUI() {
   }
 }
 
-function handleFileSelect(files: FileList | null) {
+async function handleFileSelect(files: FileList | null) {
   if (files && files.length > 0) {
     const file = files[0];
     if (
       file.type === 'application/pdf' ||
       file.name.toLowerCase().endsWith('.pdf')
     ) {
-      pageState.file = file;
+      const result = await loadPdfWithPasswordPrompt(file);
+      if (!result) return;
+      result.pdf.destroy();
+      pageState.file = result.file;
       updateUI();
     }
   }

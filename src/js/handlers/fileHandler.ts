@@ -7,34 +7,48 @@ import {
   renderFileDisplay,
   switchView,
 } from '../ui.js';
-import { formatIsoDate, readFileAsArrayBuffer, getPDFDocument } from '../utils/helpers.js';
+import {
+  formatIsoDate,
+  readFileAsArrayBuffer,
+  getPDFDocument,
+} from '../utils/helpers.js';
 import { setupCanvasEditor } from '../canvasEditor.js';
 import { toolLogic } from '../logic/index.js';
 import { renderDuplicateOrganizeThumbnails } from '../logic/duplicate-organize.js';
-import { PDFDocument as PDFLibDocument } from 'pdf-lib';
 import { icons, createIcons } from 'lucide';
 import Sortable from 'sortablejs';
+import { makeUniqueFileKey } from '../utils/deduplicate-filename.js';
+import {
+  promptAndDecryptFile,
+  handleEncryptedFiles,
+} from '../utils/password-prompt.js';
 import {
   multiFileTools,
   simpleTools,
   singlePdfLoadTools,
 } from '../config/pdf-tools.js';
 import * as pdfjsLib from 'pdfjs-dist';
+import { loadPdfDocument } from '../utils/load-pdf-document.js';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).toString();
 
-// Re-export rotation state utilities
-export { getRotationState, updateRotationState, resetRotationState, initializeRotationState } from '../utils/rotation-state.js';
+export {
+  getRotationState,
+  updateRotationState,
+  resetRotationState,
+  initializeRotationState,
+} from '../utils/rotation-state.js';
 
 const rotationState: number[] = [];
 let imageSortableInstance: Sortable | null = null;
 const activeImageUrls = new Map<File, string>();
 
-
-async function handleSinglePdfUpload(toolId, file) {
+async function handleSinglePdfUpload(toolId: string, file: File) {
   showLoader('Loading PDF...');
   try {
-    // For form-filler, bypass pdf-lib (can't handle XFA) and use PDF.js
     if (toolId === 'form-filler') {
       hideLoader();
 
@@ -57,9 +71,7 @@ async function handleSinglePdfUpload(toolId, file) {
     }
 
     const pdfBytes = await readFileAsArrayBuffer(file);
-    state.pdfDoc = await PDFLibDocument.load(pdfBytes as ArrayBuffer, {
-      ignoreEncryption: true,
-    });
+    state.pdfDoc = await loadPdfDocument(pdfBytes as ArrayBuffer);
     hideLoader();
 
     if (
@@ -68,12 +80,14 @@ async function handleSinglePdfUpload(toolId, file) {
       toolId !== 'change-permissions' &&
       toolId !== 'remove-restrictions'
     ) {
-      showAlert(
-        'Protected PDF',
-        'This PDF is password-protected. Please use the Decrypt or Change Permissions tool first.'
-      );
-      switchView('grid');
-      return;
+      const decryptedFile = await promptAndDecryptFile(file);
+      if (!decryptedFile) {
+        switchView('grid');
+        return;
+      }
+      const decryptedBytes = await readFileAsArrayBuffer(decryptedFile);
+      state.pdfDoc = await loadPdfDocument(decryptedBytes as ArrayBuffer);
+      state.files = [decryptedFile];
     }
 
     const optionsDiv = document.querySelector(
@@ -107,11 +121,14 @@ async function handleSinglePdfUpload(toolId, file) {
         .toString();
     }
 
-    if (toolId === 'organize' || toolId === 'rotate' || toolId === 'delete-pages') {
+    if (
+      toolId === 'organize' ||
+      toolId === 'rotate' ||
+      toolId === 'delete-pages'
+    ) {
       await renderPageThumbnails(toolId, state.pdfDoc);
 
       if (toolId === 'rotate') {
-        // Initialize rotation state for all pages
         rotationState.length = 0;
         for (let i = 0; i < state.pdfDoc.getPageCount(); i++) {
           rotationState.push(0);
@@ -124,24 +141,31 @@ async function handleSinglePdfUpload(toolId, file) {
         const rotateAllRightBtn = document.getElementById(
           'rotate-all-right-btn'
         );
-        const rotateAllCustomBtn = document.getElementById('rotate-all-custom-btn');
-        const rotateAllCustomInput = document.getElementById('custom-rotate-all-input') as HTMLInputElement;
-        const rotateAllDecrementBtn = document.getElementById('rotate-all-decrement-btn');
-        const rotateAllIncrementBtn = document.getElementById('rotate-all-increment-btn');
-
+        const rotateAllCustomBtn = document.getElementById(
+          'rotate-all-custom-btn'
+        );
+        const rotateAllCustomInput = document.getElementById(
+          'custom-rotate-all-input'
+        ) as HTMLInputElement;
+        const rotateAllDecrementBtn = document.getElementById(
+          'rotate-all-decrement-btn'
+        );
+        const rotateAllIncrementBtn = document.getElementById(
+          'rotate-all-increment-btn'
+        );
 
         rotateAllControls.classList.remove('hidden');
         createIcons({ icons });
 
         const rotateAll = (angle: number) => {
-          // Update rotation state for ALL pages (including unrendered ones)
           for (let i = 0; i < rotationState.length; i++) {
-            rotationState[i] = (rotationState[i] + angle);
+            rotationState[i] = rotationState[i] + angle;
           }
 
-          // Update DOM for currently rendered pages
           document.querySelectorAll('.page-rotator-item').forEach((item) => {
-            const pageIndex = parseInt((item as HTMLElement).dataset.pageIndex || '0');
+            const pageIndex = parseInt(
+              (item as HTMLElement).dataset.pageIndex || '0'
+            );
             const newRotation = rotationState[pageIndex];
             (item as HTMLElement).dataset.rotation = newRotation.toString();
 
@@ -211,7 +235,7 @@ async function handleSinglePdfUpload(toolId, file) {
 
         resultsDiv.textContent = ''; // Clear safely
 
-        const createSection = (title) => {
+        const createSection = (title: string) => {
           const wrapper = document.createElement('div');
           wrapper.className = 'mb-4';
           const h3 = document.createElement('h3');
@@ -224,7 +248,7 @@ async function handleSinglePdfUpload(toolId, file) {
           return { wrapper, ul };
         };
 
-        const createListItem = (key, value) => {
+        const createListItem = (key: string, value: string) => {
           const li = document.createElement('li');
           li.className = 'flex flex-col sm:flex-row';
           const strong = document.createElement('strong');
@@ -237,13 +261,8 @@ async function handleSinglePdfUpload(toolId, file) {
           return li;
         };
 
-        const parsePdfDate = (pdfDate) => {
-          if (
-            !pdfDate ||
-            typeof pdfDate !== 'string' ||
-            !pdfDate.startsWith('D:')
-          )
-            return pdfDate;
+        const parsePdfDate = (pdfDate: string): string => {
+          if (!pdfDate || !pdfDate.startsWith('D:')) return pdfDate;
           try {
             const year = pdfDate.substring(2, 6);
             const month = pdfDate.substring(6, 8);
@@ -294,8 +313,8 @@ async function handleSinglePdfUpload(toolId, file) {
         const fieldsSection = createSection('Interactive Form Fields');
         if (fieldObjects && Object.keys(fieldObjects).length > 0) {
           for (const fieldName in fieldObjects) {
-            const field = fieldObjects[fieldName][0];
-            const value = (field as any).fieldValue || '- Not Set -';
+            const field = fieldObjects[fieldName][0] as Record<string, unknown>;
+            const value = field.fieldValue || '- Not Set -';
             fieldsSection.ul.appendChild(
               createListItem(fieldName, String(value))
             );
@@ -305,7 +324,7 @@ async function handleSinglePdfUpload(toolId, file) {
         }
         resultsDiv.appendChild(fieldsSection.wrapper);
 
-        const createXmpListItem = (key, value, indent = 0) => {
+        const createXmpListItem = (key: string, value: string, indent = 0) => {
           const li = document.createElement('li');
           li.className = 'flex flex-col sm:flex-row';
 
@@ -322,7 +341,7 @@ async function handleSinglePdfUpload(toolId, file) {
           return li;
         };
 
-        const createXmpHeaderItem = (key, indent = 0) => {
+        const createXmpHeaderItem = (key: string, indent = 0) => {
           const li = document.createElement('li');
           li.className = 'flex pt-2';
           const strong = document.createElement('strong');
@@ -333,7 +352,11 @@ async function handleSinglePdfUpload(toolId, file) {
           return li;
         };
 
-        const appendXmpNodes = (xmlNode, ulElement, indentLevel) => {
+        const appendXmpNodes = (
+          xmlNode: Element,
+          ulElement: HTMLUListElement,
+          indentLevel: number
+        ) => {
           const xmpDateKeys = [
             'xap:CreateDate',
             'xap:ModifyDate',
@@ -343,12 +366,12 @@ async function handleSinglePdfUpload(toolId, file) {
           const childNodes = Array.from(xmlNode.children);
 
           for (const child of childNodes) {
-            if ((child as Element).nodeType !== 1) continue;
+            if (child.nodeType !== 1) continue;
 
-            let key = (child as Element).tagName;
-            const elementChildren = Array.from(
-              (child as Element).children
-            ).filter((c) => c.nodeType === 1);
+            let key = child.tagName;
+            const elementChildren = Array.from(child.children).filter(
+              (c) => c.nodeType === 1
+            );
 
             if (key === 'rdf:li') {
               appendXmpNodes(child, ulElement, indentLevel);
@@ -359,7 +382,7 @@ async function handleSinglePdfUpload(toolId, file) {
             }
 
             if (
-              (child as Element).getAttribute('rdf:parseType') === 'Resource' &&
+              child.getAttribute('rdf:parseType') === 'Resource' &&
               elementChildren.length === 0
             ) {
               ulElement.appendChild(
@@ -372,7 +395,7 @@ async function handleSinglePdfUpload(toolId, file) {
               ulElement.appendChild(createXmpHeaderItem(key, indentLevel));
               appendXmpNodes(child, ulElement, indentLevel + 1);
             } else {
-              let value = (child as Element).textContent.trim();
+              let value = (child.textContent ?? '').trim();
               if (value) {
                 if (xmpDateKeys.includes(key)) {
                   value = formatIsoDate(value);
@@ -437,9 +460,9 @@ async function handleSinglePdfUpload(toolId, file) {
       const container = document.getElementById('custom-metadata-container');
       const addBtn = document.getElementById('add-custom-meta-btn');
 
-      const formatDateForInput = (date) => {
+      const formatDateForInput = (date: Date | undefined) => {
         if (!date) return '';
-        const pad = (num) => num.toString().padStart(2, '0');
+        const pad = (num: number) => num.toString().padStart(2, '0');
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
       };
 
@@ -463,7 +486,8 @@ async function handleSinglePdfUpload(toolId, file) {
 
       addBtn.onclick = () => {
         const fieldWrapper = document.createElement('div');
-        fieldWrapper.className = 'flex flex-col sm:flex-row items-stretch sm:items-center gap-2 custom-field-wrapper';
+        fieldWrapper.className =
+          'flex flex-col sm:flex-row items-stretch sm:items-center gap-2 custom-field-wrapper';
 
         const keyInput = document.createElement('input');
         keyInput.type = 'text';
@@ -503,9 +527,10 @@ async function handleSinglePdfUpload(toolId, file) {
       toolLogic['page-dimensions']();
     }
 
-    // Setup quality sliders for image conversion tools
     if (toolId === 'pdf-to-jpg') {
-      const qualitySlider = document.getElementById('jpg-quality') as HTMLInputElement;
+      const qualitySlider = document.getElementById(
+        'jpg-quality'
+      ) as HTMLInputElement;
       const qualityValue = document.getElementById('jpg-quality-value');
       if (qualitySlider && qualityValue) {
         const updateValue = () => {
@@ -517,7 +542,9 @@ async function handleSinglePdfUpload(toolId, file) {
     }
 
     if (toolId === 'pdf-to-png') {
-      const qualitySlider = document.getElementById('png-quality') as HTMLInputElement;
+      const qualitySlider = document.getElementById(
+        'png-quality'
+      ) as HTMLInputElement;
       const qualityValue = document.getElementById('png-quality-value');
       if (qualitySlider && qualityValue) {
         const updateValue = () => {
@@ -529,7 +556,9 @@ async function handleSinglePdfUpload(toolId, file) {
     }
 
     if (toolId === 'pdf-to-webp') {
-      const qualitySlider = document.getElementById('webp-quality') as HTMLInputElement;
+      const qualitySlider = document.getElementById(
+        'webp-quality'
+      ) as HTMLInputElement;
       const qualityValue = document.getElementById('webp-quality-value');
       if (qualitySlider && qualityValue) {
         const updateValue = () => {
@@ -553,7 +582,7 @@ async function handleSinglePdfUpload(toolId, file) {
   }
 }
 
-async function handleMultiFileUpload(toolId) {
+async function handleMultiFileUpload(toolId: string) {
   if (
     toolId === 'merge' ||
     toolId === 'alternate-merge' ||
@@ -572,9 +601,7 @@ async function handleMultiFileUpload(toolId) {
     const pdfFilesLoaded = await Promise.all(
       pdfFilesUnloaded.map(async (file) => {
         const pdfBytes = await readFileAsArrayBuffer(file);
-        const pdfDoc = await PDFLibDocument.load(pdfBytes as ArrayBuffer, {
-          ignoreEncryption: true,
-        });
+        const pdfDoc = await loadPdfDocument(pdfBytes as ArrayBuffer);
 
         return {
           file,
@@ -583,24 +610,44 @@ async function handleMultiFileUpload(toolId) {
       })
     );
 
-    const foundEncryptedPDFs = pdfFilesLoaded.filter(
-      (pdf) => pdf.pdfDoc.isEncrypted
-    );
+    const encryptedIndices: number[] = [];
+    pdfFilesLoaded.forEach((pdf, index) => {
+      if (pdf.pdfDoc.isEncrypted) {
+        encryptedIndices.push(index);
+      }
+    });
 
-    if (foundEncryptedPDFs.length > 0) {
-      const encryptedPDFFileNames = [];
-      foundEncryptedPDFs.forEach((encryptedPDF) => {
-        encryptedPDFFileNames.push(encryptedPDF.file.name);
-      });
+    if (encryptedIndices.length > 0) {
+      hideLoader();
+      const decryptedFiles = await handleEncryptedFiles(
+        pdfFilesUnloaded,
+        encryptedIndices
+      );
 
-      const errorMessage = `PDFs found that are password-protected\n\nPlease use the Decrypt or Change Permissions tool on these files first:\n\n${encryptedPDFFileNames.join('\n')}`;
+      for (const [index, decryptedFile] of decryptedFiles) {
+        const originalIndex = state.files.indexOf(pdfFilesUnloaded[index]);
+        if (originalIndex !== -1) {
+          state.files[originalIndex] = decryptedFile;
+        }
+      }
 
-      hideLoader(); // Hide loader before showing alert
-      showAlert('Protected PDFs', errorMessage);
+      const skippedFiles = new Set(
+        encryptedIndices
+          .filter((i) => !decryptedFiles.has(i))
+          .map((i) => pdfFilesUnloaded[i])
+      );
+      if (skippedFiles.size > 0) {
+        state.files = state.files.filter((f) => !skippedFiles.has(f));
+      }
 
-      switchView('grid');
+      if (
+        state.files.filter((f) => f.type === 'application/pdf').length === 0
+      ) {
+        switchView('grid');
+        return;
+      }
 
-      return;
+      showLoader('Loading PDF documents...');
     }
   }
 
@@ -614,26 +661,26 @@ async function handleMultiFileUpload(toolId) {
     }
   }
 
-  // if (toolId === 'merge') {
-  //   toolLogic.merge.setup();
-  // }
-
   if (toolId === 'alternate-merge') {
     toolLogic['alternate-merge'].setup();
   } else if (toolId === 'image-to-pdf') {
     const imageList = document.getElementById('image-list');
 
     const renderedFiles = new Set(
-      Array.from(imageList.querySelectorAll('li')).map(li => li.dataset.fileName)
+      Array.from(imageList.querySelectorAll('li')).map(
+        (li) => li.dataset.fileKey
+      )
     );
 
-    state.files.forEach((file) => {
+    state.files.forEach((file, index) => {
       if (!file) {
         console.error('Invalid file encountered in state.files');
         return;
       }
 
-      if (renderedFiles.has(file.name)) {
+      const fileKey = makeUniqueFileKey(index, file.name);
+
+      if (renderedFiles.has(fileKey)) {
         return;
       }
 
@@ -645,10 +692,12 @@ async function handleMultiFileUpload(toolId) {
 
       const li = document.createElement('li');
       li.className = 'relative group cursor-move';
-      li.dataset.fileName = file.name;
+      li.dataset.fileKey = fileKey;
+      li.dataset.fileIndex = String(index);
 
       const wrapper = document.createElement('div');
-      wrapper.className = 'w-full h-36 sm:h-40 md:h-44 bg-gray-900 rounded-md border-2 border-gray-600 flex items-center justify-center overflow-hidden';
+      wrapper.className =
+        'w-full h-36 sm:h-40 md:h-44 bg-gray-900 rounded-md border-2 border-gray-600 flex items-center justify-center overflow-hidden';
 
       const img = document.createElement('img');
       img.src = url;
@@ -665,11 +714,14 @@ async function handleMultiFileUpload(toolId) {
     });
 
     const syncStateWithDOM = () => {
-      const domOrder = Array.from(imageList.querySelectorAll('li')).map(li => li.dataset.fileName);
-      state.files.sort((a, b) => {
-        const aIndex = domOrder.indexOf(a.name);
-        const bIndex = domOrder.indexOf(b.name);
-        return aIndex - bIndex;
+      const domOrder = Array.from(imageList.querySelectorAll('li')).map((li) =>
+        Number(li.dataset.fileIndex)
+      );
+      const reordered = domOrder.map((i) => state.files[i]);
+      state.files.length = 0;
+      reordered.forEach((f) => state.files.push(f));
+      Array.from(imageList.querySelectorAll('li')).forEach((li, i) => {
+        (li as HTMLElement).dataset.fileIndex = String(i);
       });
     };
 
@@ -678,7 +730,7 @@ async function handleMultiFileUpload(toolId) {
         animation: 150,
         onEnd: () => {
           syncStateWithDOM();
-        }
+        },
       });
     }
 
@@ -687,10 +739,13 @@ async function handleMultiFileUpload(toolId) {
     const opts = document.getElementById('image-to-pdf-options');
     if (opts && opts.classList.contains('hidden')) {
       opts.classList.remove('hidden');
-      const slider = document.getElementById('image-pdf-quality') as HTMLInputElement;
+      const slider = document.getElementById(
+        'image-pdf-quality'
+      ) as HTMLInputElement;
       const value = document.getElementById('image-pdf-quality-value');
       if (slider && value) {
-        const update = () => (value.textContent = `${Math.round(parseFloat(slider.value) * 100)}%`);
+        const update = () =>
+          (value.textContent = `${Math.round(parseFloat(slider.value) * 100)}%`);
         slider.addEventListener('input', update);
         update();
       }
@@ -698,7 +753,9 @@ async function handleMultiFileUpload(toolId) {
   }
 
   if (toolId === 'pdf-to-jpg') {
-    const qualitySlider = document.getElementById('jpg-quality') as HTMLInputElement;
+    const qualitySlider = document.getElementById(
+      'jpg-quality'
+    ) as HTMLInputElement;
     const qualityValue = document.getElementById('jpg-quality-value');
     if (qualitySlider && qualityValue) {
       const updateValue = () => {
@@ -710,7 +767,9 @@ async function handleMultiFileUpload(toolId) {
   }
 
   if (toolId === 'pdf-to-png') {
-    const qualitySlider = document.getElementById('png-quality') as HTMLInputElement;
+    const qualitySlider = document.getElementById(
+      'png-quality'
+    ) as HTMLInputElement;
     const qualityValue = document.getElementById('png-quality-value');
     if (qualitySlider && qualityValue) {
       const updateValue = () => {
@@ -722,7 +781,9 @@ async function handleMultiFileUpload(toolId) {
   }
 
   if (toolId === 'pdf-to-webp') {
-    const qualitySlider = document.getElementById('webp-quality') as HTMLInputElement;
+    const qualitySlider = document.getElementById(
+      'webp-quality'
+    ) as HTMLInputElement;
     const qualityValue = document.getElementById('webp-quality-value');
     if (qualitySlider && qualityValue) {
       const updateValue = () => {
@@ -741,20 +802,32 @@ async function handleMultiFileUpload(toolId) {
   }
 }
 
-export function setupFileInputHandler(toolId) {
+export function setupFileInputHandler(toolId: string) {
   const fileInput = document.getElementById('file-input');
   const isMultiFileTool = multiFileTools.includes(toolId);
   let isFirstUpload = true;
 
-  const processFiles = async (newFiles) => {
+  const processFiles = async (newFiles: File[]) => {
     if (newFiles.length === 0) return;
 
     if (toolId === 'image-to-pdf') {
-      const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/bmp', 'image/tiff'];
-      const validFiles = newFiles.filter(file => validTypes.includes(file.type));
+      const validTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'image/gif',
+        'image/bmp',
+        'image/tiff',
+      ];
+      const validFiles = newFiles.filter((file) =>
+        validTypes.includes(file.type)
+      );
 
       if (validFiles.length < newFiles.length) {
-        showAlert('Invalid Files', 'Some files were skipped because they are not supported images.');
+        showAlert(
+          'Invalid Files',
+          'Some files were skipped because they are not supported images.'
+        );
       }
 
       newFiles = validFiles;
@@ -780,7 +853,12 @@ export function setupFileInputHandler(toolId) {
     }
 
     if (isMultiFileTool) {
-      if (toolId === 'txt-to-pdf' || toolId === 'compress' || toolId === 'extract-attachments' || toolId === 'flatten') {
+      if (
+        toolId === 'txt-to-pdf' ||
+        toolId === 'compress' ||
+        toolId === 'extract-attachments' ||
+        toolId === 'flatten'
+      ) {
         const processBtn = document.getElementById('process-btn');
         if (processBtn) {
           (processBtn as HTMLButtonElement).disabled = false;
@@ -839,7 +917,7 @@ export function setupFileInputHandler(toolId) {
     const clearBtn = document.getElementById('clear-files-btn');
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
-        activeImageUrls.forEach(url => URL.revokeObjectURL(url));
+        activeImageUrls.forEach((url) => URL.revokeObjectURL(url));
         activeImageUrls.clear();
 
         state.files = [];
