@@ -138,6 +138,36 @@ docker build \
 
 Branding works in both full mode and Simple Mode, and can be combined with all other build-time options (`BASE_URL`, `SIMPLE_MODE`, `VITE_DEFAULT_LANGUAGE`).
 
+### Disabling Specific Tools
+
+Hide individual tools for compliance or security. Disabled tools are removed from the homepage, search, shortcuts, workflow builder, and direct URL access.
+
+Tool IDs are the page URL without `.html` — open any tool and look at the URL (e.g., `edit-pdf`, `sign-pdf`, `encrypt-pdf`).
+
+**Build-time** (baked into the bundle):
+
+```bash
+DISABLE_TOOLS="edit-pdf,sign-pdf" npm run build
+```
+
+**Runtime** (no rebuild needed — mount a `config.json`):
+
+```json
+{
+  "disabledTools": ["edit-pdf", "sign-pdf"]
+}
+```
+
+```bash
+docker run -d -p 3000:8080 \
+  -v ./config.json:/usr/share/nginx/html/config.json:ro \
+  ghcr.io/alam00000/bentopdf:latest
+```
+
+Both methods can be combined — the lists are merged.
+
+You can also disable specific features inside the PDF Editor (e.g., redaction) without disabling the entire tool by adding `editorDisabledCategories` to `config.json`. See the [Docker guide](/self-hosting/docker#disabling-editor-features) for the full list of categories.
+
 ## Deployment Guides
 
 Choose your platform:

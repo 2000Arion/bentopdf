@@ -13,6 +13,10 @@
 
 ![BentoPDF Tools](public/images/bentopdf-tools.png)
 
+### FOSS Hack 2026
+
+[![Watch Demo](https://img.shields.io/badge/Watch%20Demo-FOSS%20Hack%202026-red?style=for-the-badge&logo=googledrive)](https://drive.google.com/file/d/14Vf62PvHiuf1RKFKtMlAzpbf4QQPLpRF/view?usp=sharing)
+
 ---
 
 ## Table of Contents
@@ -39,6 +43,7 @@
   - [Podman Quadlet](#-podman-quadlet-systemd-integration)
   - [Simple Mode](#-simple-mode-for-internal-use)
   - [Custom Branding](#-custom-branding)
+  - [Disabling Specific Tools](#-disabling-specific-tools)
   - [WASM Configuration](#wasm-configuration)
   - [Air-Gapped / Offline Deployment](#air-gapped--offline-deployment)
   - [Security Features](#-security-features)
@@ -81,11 +86,11 @@ BentoPDF is **dual-licensed** to fit your needs:
 | License        | Best For                                     | Price              |
 | -------------- | -------------------------------------------- | ------------------ |
 | **AGPL-3.0**   | Open-source projects with public source code | **Free**           |
-| **Commercial** | Proprietary / closed-source applications     | **$49** (lifetime) |
+| **Commercial** | Proprietary / closed-source applications     | **$79** (lifetime) |
 
 <p align="center">
   <a href="https://buy.polar.sh/polar_cl_ThDfffbl733x7oAodcIryCzhlO57ZtcWPq6HJ1qMChd">
-    <img src="https://img.shields.io/badge/🚀_Get_Commercial_License-$49_Lifetime-6366f1?style=for-the-badge&labelColor=1f2937" alt="Get Commercial License">
+    <img src="https://img.shields.io/badge/🚀_Get_Commercial_License-$79_Lifetime-6366f1?style=for-the-badge&labelColor=1f2937" alt="Get Commercial License">
   </a>
 </p>
 
@@ -842,12 +847,50 @@ Or set the values in `.env.production` before building.
 > [!TIP]
 > Branding works in both full mode and Simple Mode. You can combine it with other build-time options like `SIMPLE_MODE`, `BASE_URL`, and `VITE_DEFAULT_LANGUAGE`.
 
+### 🚫 Disabling Specific Tools
+
+Hide tools from the UI for compliance or security requirements. Disabled tools are removed from the homepage, search, keyboard shortcuts, workflow builder, and direct URL access.
+
+Tool IDs are the page URL without `.html` — open any tool and look at the URL (e.g., `edit-pdf`, `sign-pdf`, `encrypt-pdf`).
+
+**Build-time** (baked into the bundle):
+
+```bash
+docker build --build-arg DISABLE_TOOLS="edit-pdf,sign-pdf,encrypt-pdf" -t bentopdf .
+```
+
+**Runtime** (no rebuild — mount a `config.json`):
+
+```json
+{
+  "disabledTools": ["edit-pdf", "sign-pdf", "encrypt-pdf"]
+}
+```
+
+```bash
+docker run -d -p 3000:8080 \
+  -v ./config.json:/usr/share/nginx/html/config.json:ro \
+  ghcr.io/alam00000/bentopdf:latest
+```
+
+Both methods can be combined — the lists are merged. For the full list of tool IDs, see the [self-hosting docs](https://bentopdf.com/docs/self-hosting/docker#disabling-specific-tools).
+
+You can also disable specific features inside the PDF Editor (e.g., redaction, forms) without disabling the entire editor. Add `editorDisabledCategories` to your `config.json`:
+
+```json
+{
+  "editorDisabledCategories": ["redaction"]
+}
+```
+
+For the full list of editor categories, see the [self-hosting docs](https://bentopdf.com/docs/self-hosting/docker#disabling-editor-features).
+
 ### 🔒 Security Features
 
 BentoPDF runs as a non-root user using nginx-unprivileged for enhanced security:
 
 - **Non-Root Execution**: Container runs with minimal privileges using nginx-unprivileged
-- **Port 8080**: Uses high port number to avoid requiring root privileges
+- **Port 8080**: Uses high port number to avoid requiring root privileges (configurable via `PORT` env var)
 - **Security Best Practices**: Follows Principle of Least Privilege
 
 #### Basic Usage
@@ -856,6 +899,18 @@ BentoPDF runs as a non-root user using nginx-unprivileged for enhanced security:
 docker build -t bentopdf .
 docker run -p 8080:8080 bentopdf
 ```
+
+#### Custom Port
+
+By default, BentoPDF listens on port `8080` inside the container. To change this, set the `PORT` environment variable:
+
+```bash
+docker run -p 3000:9090 -e PORT=9090 ghcr.io/alam00000/bentopdf:latest
+```
+
+| Variable | Description                    | Default |
+| -------- | ------------------------------ | ------- |
+| `PORT`   | Nginx listen port in container | `8080`  |
 
 #### Custom User ID (PUID/PGID)
 

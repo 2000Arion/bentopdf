@@ -7,7 +7,6 @@ import '../../css/bookmark.css';
 import { initializeGlobalShortcuts } from '../utils/shortcuts-init.js';
 import {
   truncateFilename,
-  getPDFDocument,
   formatBytes,
   downloadFile,
   escapeHtml,
@@ -46,7 +45,6 @@ let isPickingDestination = false;
 let currentPickingCallback: DestinationCallback | null = null;
 let destinationMarker: HTMLDivElement | null = null;
 let savedModalOverlay: HTMLDivElement | null = null;
-let savedModal: HTMLDivElement | null = null;
 let currentViewport: PageViewport | null = null;
 let currentZoom = 1.0;
 const fileInput = document.getElementById(
@@ -463,7 +461,6 @@ class="w-full px-2 py-1 border border-gray-300 rounded text-sm text-gray-900" />
     if (pickDestBtn) {
       pickDestBtn.addEventListener('click', () => {
         savedModalOverlay = overlay;
-        savedModal = modal;
         overlay.style.display = 'none';
 
         startDestinationPicking((page: number, pdfX: number, pdfY: number) => {
@@ -699,7 +696,6 @@ function cancelDestinationPicking(): void {
   if (savedModalOverlay) {
     savedModalOverlay.style.display = '';
     savedModalOverlay = null;
-    savedModal = null;
   }
 }
 
@@ -824,6 +820,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function showConfirmModal(message: string): Promise<boolean> {
   return new Promise((resolve) => {
+    const previousActiveEl = document.activeElement as HTMLElement | null;
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
 
@@ -844,19 +841,30 @@ function showConfirmModal(message: string): Promise<boolean> {
     overlay.appendChild(modal);
     modalContainer?.appendChild(overlay);
 
-    modal.querySelector('#modal-cancel')?.addEventListener('click', () => {
+    const modalCancelBtn = modal.querySelector(
+      '#modal-cancel'
+    ) as HTMLButtonElement | null;
+    const modalConfirmBtn = modal.querySelector(
+      '#modal-confirm'
+    ) as HTMLButtonElement | null;
+    modalCancelBtn?.focus();
+
+    modalCancelBtn?.addEventListener('click', () => {
       modalContainer?.removeChild(overlay);
+      previousActiveEl?.focus();
       resolve(false);
     });
 
-    modal.querySelector('#modal-confirm')?.addEventListener('click', () => {
+    modalConfirmBtn?.addEventListener('click', () => {
       modalContainer?.removeChild(overlay);
+      previousActiveEl?.focus();
       resolve(true);
     });
 
     overlay.addEventListener('click', (e: MouseEvent) => {
       if (e.target === overlay) {
         modalContainer?.removeChild(overlay);
+        previousActiveEl?.focus();
         resolve(false);
       }
     });
@@ -865,6 +873,7 @@ function showConfirmModal(message: string): Promise<boolean> {
 
 function showAlertModal(title: string, message: string): Promise<boolean> {
   return new Promise((resolve) => {
+    const previousActiveEl = document.activeElement as HTMLElement | null;
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
 
@@ -884,14 +893,19 @@ function showAlertModal(title: string, message: string): Promise<boolean> {
     overlay.appendChild(modal);
     modalContainer?.appendChild(overlay);
 
-    modal.querySelector('#modal-ok')?.addEventListener('click', () => {
+    const okBtn = modal.querySelector('#modal-ok') as HTMLButtonElement | null;
+    okBtn?.focus();
+
+    okBtn?.addEventListener('click', () => {
       modalContainer?.removeChild(overlay);
+      previousActiveEl?.focus();
       resolve(true);
     });
 
     overlay.addEventListener('click', (e: MouseEvent) => {
       if (e.target === overlay) {
         modalContainer?.removeChild(overlay);
+        previousActiveEl?.focus();
         resolve(true);
       }
     });
@@ -1299,7 +1313,7 @@ jsonInput?.addEventListener('change', async (e: Event) => {
       'JSON Loaded',
       'Loaded bookmarks from JSON. Now upload your PDF.'
     );
-  } catch (err) {
+  } catch {
     await showAlertModal('Error', 'Invalid JSON format');
   }
 });
@@ -2000,7 +2014,7 @@ jsonImportHidden?.addEventListener('change', async (e: Event) => {
     saveState();
     renderBookmarkTree();
     await showAlertModal('Success', 'Bookmarks imported from JSON!');
-  } catch (err) {
+  } catch {
     await showAlertModal('Error', 'Invalid JSON format');
   }
 
@@ -2292,7 +2306,7 @@ downloadBtn?.addEventListener('click', async () => {
     const blob = new Blob([new Uint8Array(pdfBytes)], {
       type: 'application/pdf',
     });
-    downloadFile(blob, `${originalFileName}-bookmarked.pdf`);
+    downloadFile(blob, `${originalFileName}.pdf`);
 
     await showAlertModal('Success', 'PDF saved successfully!');
 

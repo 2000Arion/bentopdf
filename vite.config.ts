@@ -378,6 +378,7 @@ export default defineConfig(() => {
           brandName: process.env.VITE_BRAND_NAME || '',
           brandLogo: process.env.VITE_BRAND_LOGO || '',
           footerText: process.env.VITE_FOOTER_TEXT || '',
+          appVersion: process.env.npm_package_version || 'Unknown',
         },
       }),
       languageRouterPlugin(),
@@ -420,6 +421,12 @@ export default defineConfig(() => {
     define: {
       __SIMPLE_MODE__: JSON.stringify(process.env.SIMPLE_MODE === 'true'),
       __BRAND_NAME__: JSON.stringify(process.env.VITE_BRAND_NAME || ''),
+      __DISABLED_TOOLS__: JSON.stringify(
+        (process.env.DISABLE_TOOLS || '')
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      ),
     },
     resolve: {
       alias: {
@@ -487,6 +494,7 @@ export default defineConfig(() => {
           'extract-pages': resolve(__dirname, 'src/pages/extract-pages.html'),
           'delete-pages': resolve(__dirname, 'src/pages/delete-pages.html'),
           'organize-pdf': resolve(__dirname, 'src/pages/organize-pdf.html'),
+          'overlay-pdf': resolve(__dirname, 'src/pages/overlay-pdf.html'),
           'page-numbers': resolve(__dirname, 'src/pages/page-numbers.html'),
           'add-page-labels': resolve(
             __dirname,

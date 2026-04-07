@@ -60,6 +60,9 @@ ENV VITE_BRAND_NAME=$VITE_BRAND_NAME
 ENV VITE_BRAND_LOGO=$VITE_BRAND_LOGO
 ENV VITE_FOOTER_TEXT=$VITE_FOOTER_TEXT
 
+ARG DISABLE_TOOLS
+ENV DISABLE_TOOLS=$DISABLE_TOOLS
+
 ENV NODE_OPTIONS="--max-old-space-size=3072"
 
 RUN --mount=type=secret,id=VITE_CORS_PROXY_URL \
@@ -69,7 +72,7 @@ RUN --mount=type=secret,id=VITE_CORS_PROXY_URL \
     npm run build:with-docs
 
 # Production stage
-FROM quay.io/nginx/nginx-unprivileged:stable-alpine-slim
+FROM quay.io/nginx/nginx-unprivileged:alpine-slim
 
 LABEL org.opencontainers.image.source="https://hub.docker.com/r/arion2000/pdf-tools"
 LABEL org.opencontainers.image.url="https://hub.docker.com/r/arion2000/pdf-tools"
@@ -79,6 +82,7 @@ ARG BASE_URL
 
 # Set this to "true" to disable Nginx listening on IPv6
 ENV DISABLE_IPV6=false
+ENV PORT=8080
 
 USER root
 RUN apk upgrade --no-cache

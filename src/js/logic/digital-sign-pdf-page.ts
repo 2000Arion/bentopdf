@@ -400,7 +400,7 @@ async function handleCertFile(file: File): Promise<void> {
           certStatus.className = 'text-xs text-green-400';
         }
       }
-    } catch (error) {
+    } catch {
       const certStatus = getElement<HTMLDivElement>('cert-status');
       if (certStatus) {
         certStatus.textContent = 'Failed to parse PEM file';
@@ -739,10 +739,7 @@ async function processSignature(): Promise<void> {
     const blob = new Blob([signedPdfBytes.slice().buffer], {
       type: 'application/pdf',
     });
-    const originalName = state.pdfFile?.name ?? 'document.pdf';
-    const signedName = originalName.replace(/\.pdf$/i, '_signed.pdf');
-
-    downloadFile(blob, signedName);
+    downloadFile(blob, state.pdfFile?.name ?? 'document.pdf');
 
     hideLoader();
     showAlert(

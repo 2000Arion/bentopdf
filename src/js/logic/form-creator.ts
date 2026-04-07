@@ -28,7 +28,7 @@ type PdfViewerWindow = Window & {
 };
 
 import { initializeGlobalShortcuts } from '../utils/shortcuts-init.js';
-import { downloadFile, hexToRgb, getPDFDocument } from '../utils/helpers.js';
+import { downloadFile, hexToRgb } from '../utils/helpers.js';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
 import { createIcons, icons } from 'lucide';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -65,6 +65,7 @@ let pages: PageData[] = [];
 let currentPageIndex = 0;
 let uploadedPdfDoc: PDFDocument | null = null;
 let uploadedPdfjsDoc: PDFDocumentProxy | null = null;
+let uploadedFileName: string | null = null;
 let pageSize: { width: number; height: number } = { width: 612, height: 792 };
 let currentScale = 1.333;
 let pdfViewerOffset = { x: 0, y: 0 };
@@ -319,15 +320,15 @@ toolItems.forEach((item) => {
   let touchStartY = 0;
   let isTouchDragging = false;
 
-  item.addEventListener('touchstart', (e) => {
+  item.addEventListener('touchstart', (e: TouchEvent) => {
     const touch = e.touches[0];
     touchStartX = touch.clientX;
     touchStartY = touch.clientY;
     isTouchDragging = false;
   });
 
-  item.addEventListener('touchmove', (e) => {
-    e.preventDefault(); // Prevent scrolling while dragging
+  item.addEventListener('touchmove', (e: TouchEvent) => {
+    e.preventDefault();
     const touch = e.touches[0];
     const moveX = Math.abs(touch.clientX - touchStartX);
     const moveY = Math.abs(touch.clientY - touchStartY);
@@ -338,7 +339,7 @@ toolItems.forEach((item) => {
     }
   });
 
-  item.addEventListener('touchend', (e) => {
+  item.addEventListener('touchend', (e: TouchEvent) => {
     e.preventDefault();
     if (!isTouchDragging) {
       // It was a tap, treat as click
@@ -2131,8 +2132,7 @@ downloadBtn.addEventListener('click', async () => {
     nameCount.set(field.name, count + 1);
 
     if (existingFieldNames.has(field.name)) {
-      if (field.type === 'radio' && existingRadioGroups.has(field.name)) {
-      } else {
+      if (!(field.type === 'radio' && existingRadioGroups.has(field.name))) {
         conflictsWithPdf.push(field.name);
       }
     }
@@ -2337,7 +2337,7 @@ downloadBtn.addEventListener('click', async () => {
           const existingField = form.getFieldMaybe(groupName);
 
           if (existingField) {
-            radioGroup = existingField;
+            radioGroup = existingField as PDFRadioGroup;
             radioGroups.set(groupName, radioGroup);
             console.log(`Using existing radio group from PDF: ${groupName}`);
           } else {
@@ -2718,7 +2718,7 @@ downloadBtn.addEventListener('click', async () => {
     const blob = new Blob([new Uint8Array(pdfBytes)], {
       type: 'application/pdf',
     });
-    downloadFile(blob, 'fillable-form.pdf');
+    downloadFile(blob, uploadedFileName || 'document.pdf');
     showModal(
       'Success',
       'Your PDF has been downloaded successfully.',
@@ -2788,11 +2788,11 @@ function getPageDimensions(size: string): { width: number; height: number } {
     case 'a3':
       dimensions = PageSizes.A3;
       break;
-    case 'custom':
-      // Get custom dimensions from inputs
+    case 'custom': {
       const width = parseInt(customWidth.value) || 612;
       const height = parseInt(customHeight.value) || 792;
       return { width, height };
+    }
     default:
       dimensions = PageSizes.Letter;
   }
@@ -3142,6 +3142,7 @@ async function handlePdfUpload(file: File) {
     const arrayBuffer = result.bytes;
     uploadedPdfjsDoc = result.pdf;
     uploadedPdfDoc = await loadPdfDocument(arrayBuffer);
+    uploadedFileName = file.name;
 
     // Check for existing fields and update counter
     existingFieldNames.clear();
