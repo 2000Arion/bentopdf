@@ -1,2 +1,3 @@
 .github/workflows/update-embedpdf-snippet.yml merge=ours
 .github/workflows/build-and-publish.yml merge=ours
+.github/workflows/static.yml merge=ours
