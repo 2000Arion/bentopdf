@@ -1,7 +1,6 @@
 # Global variable declaration:
 # Build to serve under Subdirectory BASE_URL if provided, eg: "ARG BASE_URL=/pdf/", otherwise leave blank: "ARG BASE_URL="
 ARG BASE_URL=
-ARG SITE_URL=https://pdf.arion2000.xyz/
 
 # Build stage
 FROM public.ecr.aws/docker/library/node:20-alpine AS builder
@@ -59,6 +58,9 @@ ARG VITE_FOOTER_TEXT="© 2026 arion2000.xyz Services. Alle Rechte vorbehalten."
 ENV VITE_BRAND_NAME=$VITE_BRAND_NAME
 ENV VITE_BRAND_LOGO=$VITE_BRAND_LOGO
 ENV VITE_FOOTER_TEXT=$VITE_FOOTER_TEXT
+
+ARG SITE_URL=https://pdf.arion2000.xyz/
+ENV SITE_URL=$SITE_URL
 
 ARG DISABLE_TOOLS
 ENV DISABLE_TOOLS=$DISABLE_TOOLS
