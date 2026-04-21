@@ -19,8 +19,9 @@ type LucideWindow = Window & {
   };
 };
 
+import DOMPurify from 'dompurify';
 import { initializeGlobalShortcuts } from '../utils/shortcuts-init.js';
-import { downloadFile, hexToRgb } from '../utils/helpers.js';
+import { downloadFile, escapeHtml, hexToRgb } from '../utils/helpers.js';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
 import { createIcons, icons } from 'lucide';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -720,7 +721,7 @@ function renderField(field: FormField): void {
       field,
       '#ffffff'
     );
-    contentEl.innerHTML = `<div class="flex items-center gap-2 px-2"><i data-lucide="calendar" class="w-4 h-4"></i><span class="text-sm date-format-text">${field.dateFormat || 'mm/dd/yyyy'}</span></div>`;
+    contentEl.innerHTML = `<div class="flex items-center gap-2 px-2"><i data-lucide="calendar" class="w-4 h-4"></i><span class="text-sm date-format-text">${escapeHtml(field.dateFormat || 'mm/dd/yyyy')}</span></div>`;
     setTimeout(() => (window as LucideWindow).lucide?.createIcons(), 0);
   } else if (field.type === 'image') {
     contentEl.className =
@@ -729,7 +730,7 @@ function renderField(field: FormField): void {
       field,
       '#f3f4f6'
     );
-    contentEl.innerHTML = `<div class="flex flex-col items-center text-center p-1"><i data-lucide="image" class="w-6 h-6 mb-1"></i><span class="text-[10px] leading-tight">${field.label || 'Click to Upload Image'}</span></div>`;
+    contentEl.innerHTML = `<div class="flex flex-col items-center text-center p-1"><i data-lucide="image" class="w-6 h-6 mb-1"></i><span class="text-[10px] leading-tight">${escapeHtml(field.label || 'Click to Upload Image')}</span></div>`;
     setTimeout(() => (window as LucideWindow).lucide?.createIcons(), 0);
   } else if (field.type === 'barcode') {
     contentEl.className = 'w-full h-full flex items-center justify-center';
@@ -754,7 +755,8 @@ function renderField(field: FormField): void {
         contentEl.appendChild(img);
       } catch (error) {
         console.warn(
-          `Failed to render barcode preview for field "${field.name}":`,
+          'Failed to render barcode preview for field:',
+          String(field.name).replace(/[\r\n]+/g, ' '),
           error
         );
         contentEl.innerHTML = `<div class="flex flex-col items-center text-center p-1 text-gray-400"><i data-lucide="qr-code" class="w-6 h-6 mb-1"></i><span class="text-[10px] leading-tight">Invalid data</span></div>`;
@@ -1105,7 +1107,7 @@ function showProperties(field: FormField): void {
     specificProps = `
         <div>
             <label class="block text-xs font-semibold text-gray-300 mb-1">Value</label>
-            <input type="text" id="propValue" value="${field.defaultValue}" ${field.combCells > 0 ? `maxlength="${field.combCells}"` : field.maxLength > 0 ? `maxlength="${field.maxLength}"` : ''} class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <input type="text" id="propValue" value="${escapeHtml(field.defaultValue)}" ${field.combCells > 0 ? `maxlength="${field.combCells}"` : field.maxLength > 0 ? `maxlength="${field.maxLength}"` : ''} class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
         </div>
         <div>
             <label class="block text-xs font-semibold text-gray-300 mb-1">Max Length (0 for unlimited)</label>
@@ -1151,11 +1153,11 @@ function showProperties(field: FormField): void {
     specificProps = `
         <div>
             <label class="block text-xs font-semibold text-gray-300 mb-1">Group Name (Must be same for group)</label>
-            <input type="text" id="propGroupName" value="${field.groupName}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <input type="text" id="propGroupName" value="${escapeHtml(field.groupName)}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
         </div>
         <div>
             <label class="block text-xs font-semibold text-gray-300 mb-1">Export Value</label>
-            <input type="text" id="propExportValue" value="${field.exportValue}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <input type="text" id="propExportValue" value="${escapeHtml(field.exportValue)}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
         </div>
         <div class="flex items-center justify-between bg-gray-600 p-2 rounded mt-2">
             <label for="propChecked" class="text-xs font-semibold text-gray-300">Checked State</label>
@@ -1168,13 +1170,13 @@ function showProperties(field: FormField): void {
     specificProps = `
         <div>
             <label class="block text-xs font-semibold text-gray-300 mb-1">Options (One per line or comma separated)</label>
-            <textarea id="propOptions" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500 h-24">${field.options?.join('\n')}</textarea>
+            <textarea id="propOptions" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500 h-24">${escapeHtml(field.options?.join('\n') ?? '')}</textarea>
         </div>
         <div>
             <label class="block text-xs font-semibold text-gray-300 mb-1">Selected Option</label>
             <select id="propSelectedOption" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
                 <option value="">None</option>
-                ${field.options?.map((opt) => `<option value="${opt}" ${field.defaultValue === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                ${field.options?.map((opt) => `<option value="${escapeHtml(opt)}" ${field.defaultValue === opt ? 'selected' : ''}>${escapeHtml(opt)}</option>`).join('')}
             </select>
         </div>
         <div class="text-xs text-gray-400 italic mt-2">
@@ -1185,7 +1187,7 @@ function showProperties(field: FormField): void {
     specificProps = `
         <div>
             <label class="block text-xs font-semibold text-gray-300 mb-1">Label</label>
-            <input type="text" id="propLabel" value="${field.label}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <input type="text" id="propLabel" value="${escapeHtml(field.label)}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
         </div>
         <div>
             <label class="block text-xs font-semibold text-gray-300 mb-1">Action</label>
@@ -1200,11 +1202,11 @@ function showProperties(field: FormField): void {
         </div>
         <div id="propUrlContainer" class="${field.action === 'url' ? '' : 'hidden'}">
             <label class="block text-xs font-semibold text-gray-300 mb-1">URL</label>
-            <input type="text" id="propActionUrl" value="${field.actionUrl || ''}" placeholder="https://example.com" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <input type="text" id="propActionUrl" value="${escapeHtml(field.actionUrl || '')}" placeholder="https://example.com" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
         </div>
         <div id="propJsContainer" class="${field.action === 'js' ? '' : 'hidden'}">
             <label class="block text-xs font-semibold text-gray-300 mb-1">Javascript Code</label>
-            <textarea id="propJsScript" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500 h-24 font-mono">${field.jsScript || ''}</textarea>
+            <textarea id="propJsScript" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500 h-24 font-mono">${escapeHtml(field.jsScript || '')}</textarea>
         </div>
         <div id="propShowHideContainer" class="${field.action === 'showHide' ? '' : 'hidden'}">
             <div class="mb-2">
@@ -1215,7 +1217,7 @@ function showProperties(field: FormField): void {
                       .filter((f) => f.id !== field.id)
                       .map(
                         (f) =>
-                          `<option value="${f.name}" ${field.targetFieldName === f.name ? 'selected' : ''}>${f.name} (${f.type})</option>`
+                          `<option value="${escapeHtml(f.name)}" ${field.targetFieldName === f.name ? 'selected' : ''}>${escapeHtml(f.name)} (${escapeHtml(f.type)})</option>`
                       )
                       .join('')}
                 </select>
@@ -1281,7 +1283,7 @@ function showProperties(field: FormField): void {
         </div>
         <div id="customFormatContainer" class="${isCustom ? '' : 'hidden'} mt-2">
             <label class="block text-xs font-semibold text-gray-300 mb-1">Custom Format</label>
-            <input type="text" id="propCustomFormat" value="${isCustom ? field.dateFormat : ''}" placeholder="e.g. dd/mm/yyyy HH:MM:ss" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <input type="text" id="propCustomFormat" value="${isCustom ? escapeHtml(field.dateFormat ?? '') : ''}" placeholder="e.g. dd/mm/yyyy HH:MM:ss" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
         </div>
         <div class="mt-3 p-2 bg-gray-700 rounded">
             <span class="text-xs text-gray-400">Example of current format:</span>
@@ -1298,7 +1300,7 @@ function showProperties(field: FormField): void {
     specificProps = `
         <div>
             <label class="block text-xs font-semibold text-gray-300 mb-1">Label / Prompt</label>
-            <input type="text" id="propLabel" value="${field.label}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <input type="text" id="propLabel" value="${escapeHtml(field.label)}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
         </div>
         <div class="text-xs text-gray-400 italic mt-2">
             Clicking this field in the PDF will open a file picker to upload an image.
@@ -1320,17 +1322,17 @@ function showProperties(field: FormField): void {
         </div>
         <div>
             <label class="block text-xs font-semibold text-gray-300 mb-1">Barcode Value</label>
-            <input type="text" id="propBarcodeValue" value="${field.barcodeValue || ''}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <input type="text" id="propBarcodeValue" value="${escapeHtml(field.barcodeValue || '')}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
         </div>
         <div id="barcodeFormatHint" class="text-xs text-gray-400 italic"></div>
         `;
   }
 
-  propertiesPanel.innerHTML = `
+  const propertiesHtml = `
     <div class="space-y-3">
       <div>
         <label class="block text-xs font-semibold text-gray-300 mb-1">Field Name ${field.type === 'radio' ? '(Group Name)' : ''}</label>
-        <input type="text" id="propName" value="${field.name}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+        <input type="text" id="propName" value="${escapeHtml(field.name)}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
         <div id="nameError" class="hidden text-red-400 text-xs mt-1"></div>
       </div>
       ${
@@ -1343,7 +1345,10 @@ function showProperties(field: FormField): void {
         <select id="existingGroups" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
           <option value="">-- Select existing group --</option>
           ${Array.from(existingRadioGroups)
-            .map((name) => `<option value="${name}">${name}</option>`)
+            .map(
+              (name) =>
+                `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`
+            )
             .join('')}
           ${Array.from(
             new Set(
@@ -1354,7 +1359,7 @@ function showProperties(field: FormField): void {
           )
             .map((name) =>
               !existingRadioGroups.has(name)
-                ? `<option value="${name}">${name}</option>`
+                ? `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`
                 : ''
             )
             .join('')}
@@ -1367,7 +1372,7 @@ function showProperties(field: FormField): void {
       ${specificProps}
       <div>
         <label class="block text-xs font-semibold text-gray-300 mb-1">Tooltip / Help Text</label>
-        <input type="text" id="propTooltip" value="${field.tooltip}" placeholder="Description for screen readers" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+        <input type="text" id="propTooltip" value="${escapeHtml(field.tooltip)}" placeholder="Description for screen readers" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
       </div>
       <div class="flex items-center">
         <input type="checkbox" id="propRequired" ${field.required ? 'checked' : ''} class="mr-2">
@@ -1394,6 +1399,10 @@ function showProperties(field: FormField): void {
       </button>
     </div>
   `;
+
+  propertiesPanel.innerHTML = DOMPurify.sanitize(propertiesHtml, {
+    ADD_ATTR: ['target'],
+  });
 
   // Common listeners
   const propName = document.getElementById('propName') as HTMLInputElement;
@@ -1784,7 +1793,7 @@ function showProperties(field: FormField): void {
           field.options
             ?.map(
               (opt) =>
-                `<option value="${opt}" ${currentVal === opt ? 'selected' : ''}>${opt}</option>`
+                `<option value="${escapeHtml(opt)}" ${currentVal === opt ? 'selected' : ''}>${escapeHtml(opt)}</option>`
             )
             .join('');
 
@@ -2317,11 +2326,17 @@ downloadBtn.addEventListener('click', async () => {
           if (existingField) {
             radioGroup = existingField as PDFRadioGroup;
             radioGroups.set(groupName, radioGroup);
-            console.log(`Using existing radio group from PDF: ${groupName}`);
+            console.log(
+              'Using existing radio group from PDF:',
+              String(groupName).replace(/[\r\n]+/g, ' ')
+            );
           } else {
             radioGroup = form.createRadioGroup(groupName);
             radioGroups.set(groupName, radioGroup);
-            console.log(`Created new radio group: ${groupName}`);
+            console.log(
+              'Created new radio group:',
+              String(groupName).replace(/[\r\n]+/g, ' ')
+            );
           }
         }
 
@@ -2478,7 +2493,12 @@ downloadBtn.addEventListener('click', async () => {
                 JS: field.jsScript,
               });
             } else if (field.action === 'showHide' && field.targetFieldName) {
-              const target = field.targetFieldName;
+              const target = field.targetFieldName
+                .replace(/\\/g, '\\\\')
+                .replace(/"/g, '\\"')
+                .replace(/\r/g, '\\r')
+                .replace(/\n/g, '\\n')
+                .replace(/\0/g, '\\0');
               let script: string;
 
               if (field.visibilityAction === 'show') {
@@ -2682,7 +2702,8 @@ downloadBtn.addEventListener('click', async () => {
             pdfPage.drawImage(pngImage, { x, y, width, height });
           } catch (e) {
             console.warn(
-              `Failed to generate barcode for field "${field.name}":`,
+              'Failed to generate barcode for field:',
+              String(field.name).replace(/[\r\n]+/g, ' '),
               e
             );
           }
