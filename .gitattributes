@@ -1,0 +1,7 @@
+.github/workflows/update-embedpdf-snippet.yml merge=ours
+.github/workflows/build-and-publish.yml merge=ours
+.github/workflows/static.yml merge=ours
+.github/workflows/codeql.yml merge=ours
+
+.github/dependabot.yml merge=ours
+.github/codeql-config.yml merge=ours
