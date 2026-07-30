@@ -1,7 +1,7 @@
 {
   "name": "bento-pdf",
   "private": true,
-  "version": "2.8.6",
+  "version": "2.8.7",
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
@@ -37,7 +37,8 @@
     "lint:security": "eslint . --no-inline-config --rule 'no-unsanitized/method:error' --rule 'no-unsanitized/property:error' --rule 'security/detect-eval-with-expression:error'",
     "security:codeql": "codeql database create ./codeql-db --language=javascript-typescript --source-root=. --overwrite --threads=0 && codeql database analyze ./codeql-db --format=sarif-latest --output=codeql-results.sarif --threads=0 codeql/javascript-queries:codeql-suites/javascript-security-extended.qls",
     "security:codeql:quick": "codeql database analyze ./codeql-db --format=csv --output=codeql-results.csv --threads=0 codeql/javascript-queries:codeql-suites/javascript-security-extended.qls",
-    "security:audit": "npm audit --audit-level=high && npm run lint:security",
+    "security:patterns": "node scripts/security-patterns-check.mjs",
+    "security:audit": "npm audit --audit-level=high && npm run lint:security && npm run security:patterns",
     "prepare": "husky"
   },
   "devDependencies": {
@@ -93,7 +94,7 @@
     "bwip-js": "^4.8.0",
     "cropperjs": "^1.6.2",
     "diff": "^8.0.3",
-    "dompurify": "^3.4.11",
+    "dompurify": "^3.4.12",
     "embedpdf-snippet": "file:vendor/embedpdf/embedpdf-snippet-2.9.1.tgz",
     "fast-xml-parser": "^5.7.1",
     "heic2any": "^0.0.4",
