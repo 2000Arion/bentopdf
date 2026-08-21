@@ -6,7 +6,6 @@ import type { Connect, Plugin } from 'vite';
 // import basicSsl from '@vitejs/plugin-basic-ssl';
 import tailwindcss from '@tailwindcss/vite';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
-import { viteStaticCopy } from 'vite-plugin-static-copy';
 import viteCompression from 'vite-plugin-compression';
 import handlebars from 'vite-plugin-handlebars';
 import { resolve } from 'path';
@@ -406,6 +405,56 @@ function flattenPagesPlugin(): Plugin {
   };
 }
 
+function swPrecachePlugin(): Plugin {
+  const workerAssetPattern = /^assets\/pdf\.worker(\.min)?-[\w-]+\.m?js$/;
+  const placeholderPattern = /const PRECACHE_ASSETS = \[[\s\S]*?\];/;
+
+  return {
+    name: 'sw-precache',
+    apply: 'build',
+    enforce: 'post',
+    writeBundle(options, bundle) {
+      const outDir = options.dir;
+      if (!outDir) return;
+
+      const workerAssets = Object.keys(bundle)
+        .filter((fileName) => workerAssetPattern.test(fileName))
+        .sort();
+
+      if (workerAssets.length === 0) {
+        throw new Error(
+          '[sw-precache] no PDF.js worker asset found in bundle — service worker would precache nothing'
+        );
+      }
+
+      const swPath = resolve(outDir, 'sw.js');
+      if (!fs.existsSync(swPath)) {
+        throw new Error(`[sw-precache] ${swPath} not found in build output`);
+      }
+
+      const source = fs.readFileSync(swPath, 'utf8');
+      if (!placeholderPattern.test(source)) {
+        throw new Error(
+          '[sw-precache] could not find "const PRECACHE_ASSETS = [...]" in sw.js'
+        );
+      }
+
+      const list = workerAssets.map((asset) => `  '${asset}',`).join('\n');
+      fs.writeFileSync(
+        swPath,
+        source.replace(
+          placeholderPattern,
+          `const PRECACHE_ASSETS = [\n${list}\n];`
+        )
+      );
+
+      console.log(
+        `[sw-precache] precaching ${workerAssets.length} asset(s): ${workerAssets.join(', ')}`
+      );
+    },
+  };
+}
+
 function rewriteHtmlPathsPlugin(): Plugin {
   const baseUrl = process.env.BASE_URL || '/';
   const normalizedBase = baseUrl.replace(/\/?$/, '/');
@@ -459,13 +508,6 @@ export default defineConfig(() => {
     console.log('[Vite] Using local WASM files only');
   }
 
-  const staticCopyTargets = [
-    {
-      src: 'node_modules/embedpdf-snippet/dist/pdfium.wasm',
-      dest: 'embedpdf',
-    },
-  ];
-
   return {
     base: (process.env.BASE_URL || '/').replace(/\/?$/, '/'),
     plugins: [
@@ -484,6 +526,7 @@ export default defineConfig(() => {
       languageRouterPlugin(),
       flattenPagesPlugin(),
       rewriteHtmlPathsPlugin(),
+      swPrecachePlugin(),
       tailwindcss(),
       nodePolyfills({
         include: ['buffer', 'stream', 'util', 'zlib', 'process'],
@@ -492,9 +535,6 @@ export default defineConfig(() => {
           global: false,
           process: true,
         },
-      }),
-      viteStaticCopy({
-        targets: staticCopyTargets,
       }),
       viteCompression({
         algorithm: 'brotliCompress',
@@ -520,6 +560,9 @@ export default defineConfig(() => {
     ],
     define: {
       __SIMPLE_MODE__: JSON.stringify(process.env.SIMPLE_MODE === 'true'),
+      __DISABLE_GITHUB_STARS__: JSON.stringify(
+        process.env.DISABLE_GITHUB_STARS === 'true'
+      ),
       __BRAND_NAME__: JSON.stringify(process.env.VITE_BRAND_NAME || ''),
       __DISABLED_TOOLS__: JSON.stringify(
         (process.env.DISABLE_TOOLS || '')
@@ -589,6 +632,7 @@ export default defineConfig(() => {
           'split-pdf': resolve(__dirname, 'src/pages/split-pdf.html'),
           'compress-pdf': resolve(__dirname, 'src/pages/compress-pdf.html'),
           'edit-pdf': resolve(__dirname, 'src/pages/edit-pdf.html'),
+          'edit-pdf-text': resolve(__dirname, 'src/pages/edit-pdf-text.html'),
           'jpg-to-pdf': resolve(__dirname, 'src/pages/jpg-to-pdf.html'),
           'sign-pdf': resolve(__dirname, 'src/pages/sign-pdf.html'),
           'crop-pdf': resolve(__dirname, 'src/pages/crop-pdf.html'),
