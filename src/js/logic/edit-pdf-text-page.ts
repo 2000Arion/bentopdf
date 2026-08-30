@@ -1,6 +1,7 @@
 import '@phosphor-icons/web/regular';
 import { createIcons, icons } from 'lucide';
 import { showAlert, showLoader, hideLoader } from '../ui.js';
+import { t } from '../i18n/i18n';
 import { batchDecryptIfNeeded } from '../utils/password-prompt.js';
 import { setupFormatDock, setupFindSheet } from './edit-pdf-text-dock';
 
@@ -274,6 +275,7 @@ interface EditorAppModule {
   setZoom: (z: number) => void;
   getZoom: () => number;
   getDocDescription: () => DocDescription;
+  setOnSaved: (fn: ((kb: number, fileName: string) => void) | null) => void;
 }
 
 function relocateAddText() {
@@ -398,6 +400,12 @@ function setupDocPanel() {
 }
 
 let appModule: EditorAppModule | null = null;
+
+function closeEditor() {
+  document.getElementById('text-editor-app')?.setAttribute('hidden', '');
+  document.getElementById('uploader')?.classList.remove('hidden');
+  document.getElementById('tool-landing')?.classList.remove('hidden');
+}
 let launching = false;
 
 function fitMobileWidth() {
@@ -428,6 +436,16 @@ async function launchEditor(file: File) {
     document.getElementById('text-editor-app')?.removeAttribute('hidden');
     if (!appModule) {
       appModule = (await import('../editcore/app.js')) as EditorAppModule;
+      appModule.setOnSaved((kb) => {
+        showAlert(
+          t('common.success'),
+          t('tools:editPdfText.saved', { size: kb }),
+          'success',
+          () => {
+            closeEditor();
+          }
+        );
+      });
       relocateAddText();
       setupDocPanel();
       setupEditMenu();
@@ -442,10 +460,8 @@ async function launchEditor(file: File) {
     if (window.matchMedia('(max-width: 768px)').matches) fitMobileWidth();
   } catch (error) {
     console.error('Error loading PDF Text Editor:', error);
-    showAlert('Error', 'Failed to load the PDF Text Editor.');
-    document.getElementById('text-editor-app')?.setAttribute('hidden', '');
-    document.getElementById('uploader')?.classList.remove('hidden');
-    document.getElementById('tool-landing')?.classList.remove('hidden');
+    showAlert(t('common.error'), t('tools:editPdfText.failedToLoad'));
+    closeEditor();
   } finally {
     hideLoader();
     launching = false;
