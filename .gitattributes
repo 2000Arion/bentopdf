@@ -1,0 +1,4 @@
+.github/workflows/* merge=ours
+
+.github/dependabot.yml merge=ours
+.github/codeql-config.yml merge=ours

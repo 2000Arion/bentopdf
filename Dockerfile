@@ -17,7 +17,7 @@ COPY . .
 
 # Build without type checking (vite build only)
 # Pass SIMPLE_MODE environment variable if provided
-ARG SIMPLE_MODE=false
+ARG SIMPLE_MODE=true
 ENV SIMPLE_MODE=$SIMPLE_MODE
 ARG DISABLE_GITHUB_STARS=false
 ENV DISABLE_GITHUB_STARS=$DISABLE_GITHUB_STARS
@@ -50,16 +50,19 @@ ENV VITE_TESSERACT_AVAILABLE_LANGUAGES=$VITE_TESSERACT_AVAILABLE_LANGUAGES
 ENV VITE_OCR_FONT_BASE_URL=$VITE_OCR_FONT_BASE_URL
 
 # Default UI language (e.g. en, fr, de, es, zh, ar)
-ARG VITE_DEFAULT_LANGUAGE
+ARG VITE_DEFAULT_LANGUAGE=de
 ENV VITE_DEFAULT_LANGUAGE=$VITE_DEFAULT_LANGUAGE
 
 # Custom branding (e.g. VITE_BRAND_NAME=MyCompany VITE_BRAND_LOGO=my-logo.svg)
-ARG VITE_BRAND_NAME
-ARG VITE_BRAND_LOGO
-ARG VITE_FOOTER_TEXT
+ARG VITE_BRAND_NAME="arion2000.xyz PDF-Werkzeuge"
+ARG VITE_BRAND_LOGO=images/favicon-no-bg.svg
+ARG VITE_FOOTER_TEXT="© 2026 arion2000.xyz Services. Alle Rechte vorbehalten."
 ENV VITE_BRAND_NAME=$VITE_BRAND_NAME
 ENV VITE_BRAND_LOGO=$VITE_BRAND_LOGO
 ENV VITE_FOOTER_TEXT=$VITE_FOOTER_TEXT
+
+ARG SITE_URL=https://pdf.arion2000.xyz/
+ENV SITE_URL=$SITE_URL
 
 ARG DISABLE_TOOLS
 ENV DISABLE_TOOLS=$DISABLE_TOOLS
@@ -81,8 +84,8 @@ RUN --mount=type=secret,id=VITE_CORS_PROXY_URL,required=false \
 # Production stage
 FROM quay.io/nginx/nginx-unprivileged:alpine-slim
 
-LABEL org.opencontainers.image.source="https://github.com/alam00000/bentopdf"
-LABEL org.opencontainers.image.url="https://github.com/alam00000/bentopdf"
+LABEL org.opencontainers.image.source="https://hub.docker.com/r/arion2000/pdf-tools"
+LABEL org.opencontainers.image.url="https://hub.docker.com/r/arion2000/pdf-tools"
 
 # global arg to local arg
 ARG BASE_URL
