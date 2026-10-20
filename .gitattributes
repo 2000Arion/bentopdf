@@ -2,3 +2,7 @@
 
 .github/dependabot.yml merge=ours
 .github/codeql-config.yml merge=ours
+.github/workflows/build-and-publish.yml merge=ours
+.github/workflows/cla.yml merge=ours
+.github/workflows/sponsors.yml merge=ours
+.github/workflows/update-bentopdf-viewer.yml merge=ours
