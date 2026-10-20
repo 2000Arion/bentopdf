@@ -65,7 +65,10 @@ function formatDate(iso) {
 }
 
 function parsePost(file) {
-  const raw = fs.readFileSync(path.join(POSTS_DIR, file), 'utf-8');
+  const raw = fs
+    .readFileSync(path.join(POSTS_DIR, file), 'utf-8')
+    .replace(/^\uFEFF/, '')
+    .replace(/\r\n?/g, '\n');
   if (/[—–]/.test(raw)) {
     throw new Error(
       `${file}: contains an em or en dash, which the house style forbids`
